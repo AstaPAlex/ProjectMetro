@@ -2,6 +2,7 @@ package metro;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class Line {
     private final Color color;
@@ -40,5 +41,22 @@ public class Line {
                 + "color='" + color.getStringColor()
                 + "', stations=" + stations
                 + '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Line line = (Line) o;
+        return color == line.color;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(color);
     }
 }

@@ -1,8 +1,7 @@
-import exceptions.ChangeLineException;
-import exceptions.ImpossibleBuildRoute;
-import exceptions.ImpossibleCreateLineException;
-import exceptions.ImpossibleCreateStationException;
+import exceptions.*;
 import java.time.Duration;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import metro.Color;
 import metro.Metro;
 import metro.Station;
@@ -10,19 +9,16 @@ import metro.Station;
 
 public class Runner {
     public static void main(String[] args) throws ImpossibleCreateLineException, ImpossibleCreateStationException,
-            ChangeLineException, ImpossibleBuildRoute {
+            NameStationException, StartEqualsFinishException {
         Metro metro = new Metro("Пермь");
         addStationMetro(metro);
-        //addStationMetroTest(metro);
         System.out.println(metro);
-        System.out.println(metro.findStationChange(Color.RED, Color.BLUE));
-
     }
 
     public static void addStationMetro(Metro metro) throws ImpossibleCreateLineException,
-            ImpossibleCreateStationException, ChangeLineException, ImpossibleBuildRoute {
+            ImpossibleCreateStationException, NameStationException, StartEqualsFinishException {
         metro.createLine(Color.RED);
-        metro.createFirstStation(Color.RED, "Спортивная");
+        Station station01 = metro.createFirstStation(Color.RED, "Спортивная");
         metro.createFinallyStation(Color.RED, "Медведковская", Duration.ofSeconds(141));
         metro.createFinallyStation(Color.RED, "Молодежная", Duration.ofSeconds(118));
         metro.createFinallyStation(Color.RED, "Пермь 1", Duration.ofSeconds(180));
@@ -36,25 +32,14 @@ public class Runner {
         metro.createFinallyStation(Color.BLUE, "Нижнекамская", Duration.ofSeconds(209));
         metro.createFinallyStation(Color.BLUE, "Соборная", Duration.ofSeconds(108));
 
-        metro.createLine(Color.ORANGE);
-        metro.createFirstStation(Color.ORANGE, "Царицыно");
-        metro.createFinallyStation(Color.ORANGE, "Подольск", Duration.ofSeconds(90));
+        GregorianCalendar date1 = new GregorianCalendar(2023, Calendar.DECEMBER, 10);
+        GregorianCalendar date2 = new GregorianCalendar(2023, Calendar.DECEMBER, 11);
 
-        String startStation = "Соборная";
-        String finishStation = "Подольск";
+        station01.sellTicket(date1, "Спортивная", "Соборная");
+        station01.sellTicket(date1, "Молодежная", "Соборная");
+        station01.sellTicket(date2, "Пацанская", "Соборная");
 
-        int sum = metro.sumRuns(startStation, finishStation);
-        System.out.println(sum);
-        System.out.println();
-        System.out.println();
-
-
-        /*int sum = metro.sumRunsOnOneLine(startStation, finishStation);
-        int sum2 = metro.sumRunsOnOneLine(finishStation, startStation);
-        System.out.println(sum);
-        System.out.println(sum2);*/
-
-
+        System.out.println(station01.getTicketOffice());
     }
 
 }

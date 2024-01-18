@@ -16,27 +16,28 @@ public class Metro {
         if (!checkHaveLine(color)) {
             lines.put(color, new Line(color, this));
         } else {
-            throw new ImpossibleCreateLineException();
+            throw new LineExistsException("Такая линия уже существует");
         }
     }
 
-    public void createFirstStation(Color color, String name) throws ImpossibleCreateStationException {
+    public Station createFirstStation(Color color, String name) throws ImpossibleCreateStationException,
+            NameStationException, LineExistsException {
         checkHaveLineAndHaveNotStation(color, name);
-        if (isEmptyListStation(color)) {
-            lines.get(color).getStations().add(new Station(name, lines.get(color), this));
-        } else {
-            throw new HaveFirstStationException();
+        if (isEmptyLine(color)) {
+            Station station = new Station(name, lines.get(color), this);
+            lines.get(color).getStations().add(station);
+            return station;
         }
+        return null;
     }
 
-    public void createFinallyStation(Color color, String name, Duration time,
-                                     String... changeStations) throws ImpossibleCreateStationException, ChangeLineException {
+    public Station createFinallyStation(Color color, String name, Duration time,
+                                     String... changeStations) throws ImpossibleCreateStationException,
+            NameStationException, LineExistsException {
         checkHaveLineAndHaveNotStation(color, name);
-        if (!checkHaveLastStation(color)) {
-            throw new NoLastStationException();
-        } else if (isLastStationHaveNextStation(color)) {
-            throw new NotLastStationException();
-        } else if (time.isZero()) {
+        checkHaveLastStation(color);
+        checkLastStationHaveNextStation(color);
+        if (time.isZero()) {
             throw new TimeIsZeroException();
         }
         Station newStation = new Station(name, lines.get(color).getLastStation(), lines.get(color), this);
@@ -44,37 +45,28 @@ public class Metro {
         lines.get(color).getLastStation().setStationNext(newStation);
         lines.get(color).getLastStation().setTimeTransferToNextStation(time);
         lines.get(color).getStations().add(newStation);
+        return newStation;
     }
 
-    public Station findStationChange(Color startColor, Color finishColor) throws ChangeLineException {
-        if (startColor.equals(finishColor)) {
-            throw new ChangeLineException();
-        }
-        for (Station station : lines.get(startColor).getStations()) {
-            if (station.checkChangeLine(finishColor) != null) {
-                return station;
-            }
-        }
-        throw new ChangeLineException();
-    }
-
-    public int sumRuns(String start, String finish) throws ImpossibleBuildRoute, ChangeLineException {
-        Station stationStart = getStationsName(start);
-        Station stationFinish = getStationsName(finish);
-        if (stationStart == null || stationFinish == null) {
-            throw new NameStationException();
-        }
+    public int sumRuns(String start, String finish) throws ChangeLineException, NameStationException,
+            StartEqualsFinishException {
+        Station stationStart = getStation(start);
+        Station stationFinish = getStation(finish);
         if (stationStart.equals(stationFinish)) {
             throw new StartEqualsFinishException();
         }
-        return sumRunsCalculate(stationStart, stationFinish);
+        return sumRunsDifferentLine(stationStart, stationFinish);
     }
 
-    public int sumRunsCalculate(Station start, Station finish) throws ChangeLineException {
+    private int sumRunsDifferentLine(Station start, Station finish) throws ChangeLineException {
         if (!start.getLine().getColor().equals(finish.getLine().getColor())) {
-            Station stationChange = findStationChange(start.getLine().getColor(), finish.getLine().getColor());
+            Color startColor = start.getLine().getColor();
+            Color finishColor = finish.getLine().getColor();
+            Station stationChange = findStationChange(startColor, finishColor);
             int sum1 = sumRunsOnOneLine(start, stationChange);
-            int sum2 = sumRunsOnOneLine(stationChange.checkChangeLine(finish.getLine().getColor()), finish);
+            int sum2 = sumRunsOnOneLine(findStationChange(finishColor, startColor), finish);
+            sum1 = (sum1 == -1) ? 0 : sum1;
+            sum2 = (sum2 == -1) ? 0 : sum2;
             return sum1 + sum2;
         } else {
             return sumRunsOnOneLine(start, finish);
@@ -115,16 +107,36 @@ public class Metro {
         }
     }
 
+    private Station findStationChange(Color startColor, Color finishColor) throws ChangeLineException {
+        if (startColor.equals(finishColor)) {
+            throw new ChangeLineException();
+        }
+        for (Station station : lines.get(startColor).getStations()) {
+            if (station.findStationChangeLine(finishColor) != null) {
+                return station;
+            }
+        }
+        throw new ChangeLineException();
+    }
+
+    private Station getStation(String name) throws NameStationException {
+        if (!lines.isEmpty()) {
+            for (Line lineMetro : lines.values()) {
+                if (lineMetro.getStationName(name) != null) {
+                    return lineMetro.getStationName(name);
+                }
+            }
+        }
+        throw new NameStationException();
+    }
 
     private void createStationsChange(String[] changeStations, Station newStation)
-            throws ChangeLineException {
+            throws ChangeLineException, NameStationException {
         for (String stationName : changeStations) {
-            Station stationChange = getStationsName(stationName);
-            if (stationChange != null) {
-                if (!stationChange.getLine().equals(newStation.getLine())) {
-                    newStation.addChangeStation(getStationsName(stationName));
-                    stationChange.addChangeStation(newStation);
-                }
+            Station stationChange = getStation(stationName);
+            if (!stationChange.getLine().equals(newStation.getLine())) {
+                newStation.addChangeStation(getStation(stationName));
+                stationChange.addChangeStation(newStation);
             } else {
                 throw new ChangeLineException();
             }
@@ -135,36 +147,36 @@ public class Metro {
         return lines.containsKey(color);
     }
 
-    private void checkHaveLineAndHaveNotStation(Color color, String name) throws NoLineWithColorException,
-            StationHaveException {
-        if (!checkHaveLine(color)) {
-            throw new NoLineWithColorException();
-        } else if (getStationsName(name) != null) {
-            throw new StationHaveException();
-        }
-    }
-
-    private boolean isEmptyListStation(Color color) {
-        return lines.get(color).getStations().isEmpty();
-    }
-
-    private boolean isLastStationHaveNextStation(Color color) {
-        return lines.get(color).getLastStation().getStationNext() != null;
-    }
-
-    private boolean checkHaveLastStation(Color color) {
-        return lines.get(color).getLastStation() != null;
-    }
-
-    public Station getStationsName(String name) {
-        if (!lines.isEmpty()) {
-            for (Line lineMetro : lines.values()) {
-                if (lineMetro.getStationName(name) != null) {
-                    return lineMetro.getStationName(name);
-                }
+    private void checkHaveLineAndHaveNotStation(Color color, String name) throws LineExistsException {
+        if (checkHaveLine(color)) {
+            try {
+                getStation(name);
+            } catch (NameStationException e) {
+                return;
             }
         }
-        return null;
+        throw new LineExistsException("Такая линия не существует");
+    }
+
+    private boolean isEmptyLine(Color color) throws HaveStationException {
+        if (lines.get(color).getStations().isEmpty()) {
+            return true;
+        }
+        throw new HaveStationException("Первая станция уже существует!");
+    }
+
+    private void checkLastStationHaveNextStation(Color color) throws NotLastStationException {
+        if (lines.get(color).getLastStation().getStationNext() == null) {
+            return;
+        }
+        throw new NotLastStationException();
+    }
+
+    private void checkHaveLastStation(Color color) throws NoLastStationException {
+        if (lines.get(color).getLastStation() != null) {
+            return;
+        }
+        throw new NoLastStationException();
     }
 
     @Override

@@ -1,8 +1,8 @@
 package exceptions;
 
-public class ChangeLineException extends Exception {
+public class ChangeLineException extends ImpossibleCreateStationException {
 
     public ChangeLineException() {
-        System.out.println("Пересадка невозможна!");
+        super("Пересадка невозможна!");
     }
 }

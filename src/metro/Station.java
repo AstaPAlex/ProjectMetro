@@ -1,18 +1,22 @@
 package metro;
 
+import exceptions.ChangeLineException;
+import exceptions.ImpossibleBuildRoute;
+import exceptions.NameStationException;
+import exceptions.StartEqualsFinishException;
+import java.math.BigDecimal;
 import java.time.Duration;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class Station {
     private final String name;
     private final Metro metro;
     private final Line line;
+    private final TicketOffice ticketOffice = new TicketOffice();
+    private final Set<Station> changeLines = new HashSet<>();
     private Station stationBefore;
     private Station stationNext;
     private Duration timeTransferToNextStation;
-    private Set<Station> changeLines = new HashSet<>();
-
 
     public Station(String name, Station stationBefore,
                    Line lineMetro, Metro metro) {
@@ -31,12 +35,16 @@ public class Station {
     private String getStringColorChangeLines() {
         String result = null;
         String delimiter = ",";
-        if (changeLines != null) {
-            for (Station station : changeLines) {
-                result = String.join(delimiter, station.getLine().getColor().getStringColor());
-            }
+        for (Station station : changeLines) {
+            result = String.join(delimiter, station.getLine().getColor().getStringColor());
         }
         return result;
+    }
+
+    public BigDecimal sellTicket(Calendar date, String start, String finish) throws NameStationException,
+            StartEqualsFinishException, ChangeLineException {
+        int sumRuns = metro.sumRuns(start, finish);
+        return ticketOffice.getPrice(date, sumRuns);
     }
 
     public Line getLine() {
@@ -63,7 +71,7 @@ public class Station {
         this.stationNext = stationNext;
     }
 
-    public Station checkChangeLine(Color finishColor) {
+    public Station findStationChangeLine(Color finishColor) {
         for (Station station : changeLines) {
             if (finishColor.equals(station.line.getColor())) {
                 return station;
@@ -74,6 +82,27 @@ public class Station {
 
     public Station getStationBefore() {
         return stationBefore;
+    }
+
+    public TicketOffice getTicketOffice() {
+        return ticketOffice;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Station station = (Station) o;
+        return this.name.equals(((Station) o).name) || this.changeLines.contains(o);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name);
     }
 
     @Override

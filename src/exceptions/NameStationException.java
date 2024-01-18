@@ -1,7 +1,7 @@
 package exceptions;
 
-public class NameStationException extends ImpossibleBuildRoute {
+public class NameStationException extends Exception {
     public NameStationException() {
-        super("Ошибка в имени станции!");
+        super("Станция с таким именем отсутствует");
     }
 }
