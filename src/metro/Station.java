@@ -28,7 +28,7 @@ public class Station {
         this.metro = metro;
     }
 
-    private String getColorChangeLines() {
+    private String getStringColorChangeLines() {
         String result = null;
         String delimiter = ",";
         if (changeLines != null) {
@@ -63,11 +63,24 @@ public class Station {
         this.stationNext = stationNext;
     }
 
+    public Station checkChangeLine(Color finishColor) {
+        for (Station station : changeLines) {
+            if (finishColor.equals(station.line.getColor())) {
+                return station;
+            }
+        }
+        return null;
+    }
+
+    public Station getStationBefore() {
+        return stationBefore;
+    }
+
     @Override
     public String toString() {
         return "metro.Station{"
                 + "name='" + name + '\''
-                + ", changeLines=" + getColorChangeLines()
+                + ", changeLines=" + getStringColorChangeLines()
                 + '}';
     }
 

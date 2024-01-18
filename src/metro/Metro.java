@@ -30,7 +30,7 @@ public class Metro {
     }
 
     public void createFinallyStation(Color color, String name, Duration time,
-                                     String... changeStations) throws ImpossibleCreateStationException {
+                                     String... changeStations) throws ImpossibleCreateStationException, ChangeLineException {
         checkHaveLineAndHaveNotStation(color, name);
         if (!checkHaveLastStation(color)) {
             throw new NoLastStationException();
@@ -40,25 +40,93 @@ public class Metro {
             throw new TimeIsZeroException();
         }
         Station newStation = new Station(name, lines.get(color).getLastStation(), lines.get(color), this);
-        createChangeStations(changeStations, newStation);
+        createStationsChange(changeStations, newStation);
         lines.get(color).getLastStation().setStationNext(newStation);
         lines.get(color).getLastStation().setTimeTransferToNextStation(time);
         lines.get(color).getStations().add(newStation);
     }
 
-    private void createChangeStations(String[] changeStations, Station newStation)
-            throws ImpossibleCreateStationException {
+    public Station findStationChange(Color startColor, Color finishColor) throws ChangeLineException {
+        if (startColor.equals(finishColor)) {
+            throw new ChangeLineException();
+        }
+        for (Station station : lines.get(startColor).getStations()) {
+            if (station.checkChangeLine(finishColor) != null) {
+                return station;
+            }
+        }
+        throw new ChangeLineException();
+    }
+
+    public int sumRuns(String start, String finish) throws ImpossibleBuildRoute, ChangeLineException {
+        Station stationStart = getStationsName(start);
+        Station stationFinish = getStationsName(finish);
+        if (stationStart == null || stationFinish == null) {
+            throw new NameStationException();
+        }
+        if (stationStart.equals(stationFinish)) {
+            throw new StartEqualsFinishException();
+        }
+        return sumRunsCalculate(stationStart, stationFinish);
+    }
+
+    public int sumRunsCalculate(Station start, Station finish) throws ChangeLineException {
+        if (!start.getLine().getColor().equals(finish.getLine().getColor())) {
+            Station stationChange = findStationChange(start.getLine().getColor(), finish.getLine().getColor());
+            int sum1 = sumRunsOnOneLine(start, stationChange);
+            int sum2 = sumRunsOnOneLine(stationChange.checkChangeLine(finish.getLine().getColor()), finish);
+            return sum1 + sum2;
+        } else {
+            return sumRunsOnOneLine(start, finish);
+        }
+    }
+    
+    private int sumRunsOnOneLine(Station start, Station finish) {
+        int sum = countSumRunsOnNext(start, finish);
+        if (sum == -1) {
+            return countSumRunsOnBefore(start, finish);
+        }
+        return sum;
+    }
+
+    private int countSumRunsOnNext(Station start, Station finish) {
+        Station nextStation = start.getStationNext();
+        if (nextStation == null) {
+            return -1;
+        }
+        if (nextStation.equals(finish)) {
+            return 1;
+        } else {
+            int sum = countSumRunsOnNext(nextStation, finish);
+            return (sum == -1 ? -1 : 1 + sum);
+        }
+    }
+
+    private int countSumRunsOnBefore(Station finish, Station start) {
+        Station beforeStation = finish.getStationBefore();
+        if (beforeStation == null) {
+            return -1;
+        }
+        if (beforeStation.equals(start)) {
+            return 1;
+        } else {
+            int sum = countSumRunsOnBefore(beforeStation, start);
+            return (sum == -1 ? -1 : 1 + sum);
+        }
+    }
+
+
+    private void createStationsChange(String[] changeStations, Station newStation)
+            throws ChangeLineException {
         for (String stationName : changeStations) {
             Station stationChange = getStationsName(stationName);
             if (stationChange != null) {
                 if (!stationChange.getLine().equals(newStation.getLine())) {
                     newStation.addChangeStation(getStationsName(stationName));
                     stationChange.addChangeStation(newStation);
-                } else {
-                    throw new ChangeLineException();
                 }
             } else {
-                throw new NameStationException();
+                throw new ChangeLineException();
             }
         }
     }
@@ -68,11 +136,11 @@ public class Metro {
     }
 
     private void checkHaveLineAndHaveNotStation(Color color, String name) throws NoLineWithColorException,
-            NameStationException {
+            StationHaveException {
         if (!checkHaveLine(color)) {
             throw new NoLineWithColorException();
         } else if (getStationsName(name) != null) {
-            throw new NameStationException();
+            throw new StationHaveException();
         }
     }
 
@@ -88,7 +156,7 @@ public class Metro {
         return lines.get(color).getLastStation() != null;
     }
 
-    private Station getStationsName(String name) {
+    public Station getStationsName(String name) {
         if (!lines.isEmpty()) {
             for (Line lineMetro : lines.values()) {
                 if (lineMetro.getStationName(name) != null) {
