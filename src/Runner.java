@@ -18,8 +18,8 @@ public class Runner {
         GregorianCalendar date2 = new GregorianCalendar(2023, Calendar.DECEMBER, 11);
 
         station1.sellTicket(date1, "Спортивная", "Соборная");
-        station1.sellTicket(date1, "Молодежная", "Соборная");
-        station1.sellTicket(date2, "Пацанская", "Соборная");
+        station1.sellTicket(date1, "Спортивная", "Пермь 1");
+        station1.sellTicket(date2, "Спортивная", "Медведковская");
 
         System.out.println(station1.getTicketOffice());
     }
