@@ -8,6 +8,7 @@ import java.util.HashMap;
 public class TicketOffice {
     private final HashMap<Calendar, BigDecimal> salesReport;
     private final String name;
+
     public TicketOffice(String name) {
         this.name = name;
         salesReport = new HashMap<>();
