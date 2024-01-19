@@ -12,7 +12,7 @@ public class Station {
     private final String name;
     private final Metro metro;
     private final Line line;
-    private final TicketOffice ticketOffice = new TicketOffice();
+    private final TicketOffice ticketOffice;
     private final Set<Station> changeLines = new HashSet<>();
     private Station stationBefore;
     private Station stationNext;
@@ -24,12 +24,14 @@ public class Station {
         this.stationBefore = stationBefore;
         this.line = lineMetro;
         this.metro = metro;
+        this.ticketOffice = new TicketOffice(name);
     }
 
     public Station(String name, Line lineMetro, Metro metro) {
         this.name = name;
         this.line = lineMetro;
         this.metro = metro;
+        this.ticketOffice = new TicketOffice(name);
     }
 
     private String getStringColorChangeLines() {

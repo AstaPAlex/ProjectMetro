@@ -7,9 +7,11 @@ import java.util.HashMap;
 
 public class TicketOffice {
     private final HashMap<Calendar, BigDecimal> salesReport;
-
-    public TicketOffice() {
+    private final String name;
+    public TicketOffice(String name) {
+        this.name = name;
         salesReport = new HashMap<>();
+
     }
 
     public BigDecimal getPrice(Calendar date, int sumRuns) {
@@ -24,7 +26,7 @@ public class TicketOffice {
 
     @Override
     public String toString() {
-        StringBuilder result = new StringBuilder("Касса: \n");
+        StringBuilder result = new StringBuilder("Касса: " + name + "\n");
         for (Calendar data : salesReport.keySet()) {
             result.append("Дата: ").append(new SimpleDateFormat("dd MMM yyy").format(data.getTime()));
             result.append(", продажи: ").append(salesReport.get(data)).append("\n");
