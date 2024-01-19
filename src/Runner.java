@@ -9,6 +9,7 @@ import metro.Station;
 
 public class Runner {
     private static Station station1;
+
     public static void main(String[] args) throws ImpossibleCreateLineException, ImpossibleCreateStationException,
             NameStationException, StartEqualsFinishException {
         Metro metro = new Metro("Пермь");
