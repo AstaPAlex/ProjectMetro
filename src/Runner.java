@@ -8,17 +8,26 @@ import metro.Station;
 
 
 public class Runner {
+    private static Station station1;
     public static void main(String[] args) throws ImpossibleCreateLineException, ImpossibleCreateStationException,
             NameStationException, StartEqualsFinishException {
         Metro metro = new Metro("Пермь");
         addStationMetro(metro);
         System.out.println(metro);
+        GregorianCalendar date1 = new GregorianCalendar(2023, Calendar.DECEMBER, 10);
+        GregorianCalendar date2 = new GregorianCalendar(2023, Calendar.DECEMBER, 11);
+
+        station1.sellTicket(date1, "Спортивная", "Соборная");
+        station1.sellTicket(date1, "Молодежная", "Соборная");
+        station1.sellTicket(date2, "Пацанская", "Соборная");
+
+        System.out.println(station1.getTicketOffice());
     }
 
     public static void addStationMetro(Metro metro) throws ImpossibleCreateLineException,
-            ImpossibleCreateStationException, NameStationException, StartEqualsFinishException {
+            ImpossibleCreateStationException, NameStationException {
         metro.createLine(Color.RED);
-        Station station01 = metro.createFirstStation(Color.RED, "Спортивная");
+        station1 = metro.createFirstStation(Color.RED, "Спортивная");
         metro.createFinallyStation(Color.RED, "Медведковская", Duration.ofSeconds(141));
         metro.createFinallyStation(Color.RED, "Молодежная", Duration.ofSeconds(118));
         metro.createFinallyStation(Color.RED, "Пермь 1", Duration.ofSeconds(180));
@@ -32,14 +41,6 @@ public class Runner {
         metro.createFinallyStation(Color.BLUE, "Нижнекамская", Duration.ofSeconds(209));
         metro.createFinallyStation(Color.BLUE, "Соборная", Duration.ofSeconds(108));
 
-        GregorianCalendar date1 = new GregorianCalendar(2023, Calendar.DECEMBER, 10);
-        GregorianCalendar date2 = new GregorianCalendar(2023, Calendar.DECEMBER, 11);
-
-        station01.sellTicket(date1, "Спортивная", "Соборная");
-        station01.sellTicket(date1, "Молодежная", "Соборная");
-        station01.sellTicket(date2, "Пацанская", "Соборная");
-
-        System.out.println(station01.getTicketOffice());
     }
 
 }
