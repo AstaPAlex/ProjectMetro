@@ -1,14 +1,16 @@
 package metro;
 
-import exceptions.ChangeLineException;
-import exceptions.ImpossibleBuildRoute;
-import exceptions.NameStationException;
-import exceptions.StartEqualsFinishException;
+import exceptions.*;
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 public class Station {
+    private static final long PRICE_SEASON_TICKET = 3000;
+    private static final long PRICE_ONE_TRANSFER = 5;
+    private static final long PRICE_TICKET = 20;
     private final String name;
     private final Metro metro;
     private final Line line;
@@ -24,14 +26,14 @@ public class Station {
         this.stationBefore = stationBefore;
         this.line = lineMetro;
         this.metro = metro;
-        this.ticketOffice = new TicketOffice(name);
+        this.ticketOffice = new TicketOffice();
     }
 
     public Station(String name, Line lineMetro, Metro metro) {
         this.name = name;
         this.line = lineMetro;
         this.metro = metro;
-        this.ticketOffice = new TicketOffice(name);
+        this.ticketOffice = new TicketOffice();
     }
 
     private String getStringColorChangeLines() {
@@ -43,10 +45,25 @@ public class Station {
         return result;
     }
 
-    public BigDecimal sellTicket(Calendar date, String start, String finish) throws NameStationException,
-            StartEqualsFinishException, ChangeLineException {
+    public void sellTicket(LocalDateTime dateTime, String start, String finish) throws StartEqualsFinishException,
+            ChangeLineException, LineNotFoundException, NotFoundStationException {
         int sumRuns = metro.sumRuns(start, finish);
-        return ticketOffice.getPrice(date, sumRuns);
+        LocalDate date = dateTime.toLocalDate();
+        ticketOffice.sellTicket(date, sumRuns * PRICE_ONE_TRANSFER + PRICE_TICKET);
+    }
+
+    public void sellSeasonTicket(LocalDate date) throws NumberTicketIndexOutOfBoundsException {
+        getTicketOffice().sellTicket(date, PRICE_SEASON_TICKET);
+        metro.addSeasonTicket(date);
+    }
+
+    public void extendSeasonTicket(String id, LocalDate date) throws NotFoundTicket {
+        metro.extendSeasonTicket(id, date);
+        getTicketOffice().sellTicket(date, PRICE_SEASON_TICKET);
+    }
+
+    public TreeMap<LocalDate, BigDecimal> getReport() {
+        return ticketOffice.getSalesReport();
     }
 
     public Line getLine() {

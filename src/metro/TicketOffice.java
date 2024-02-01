@@ -1,37 +1,33 @@
 package metro;
 
 import java.math.BigDecimal;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.HashMap;
+import java.time.LocalDate;
+import java.util.TreeMap;
 
 public class TicketOffice {
-    private final HashMap<Calendar, BigDecimal> salesReport;
-    private final String name;
+    private final TreeMap<LocalDate, BigDecimal> salesReport;
 
-    public TicketOffice(String name) {
-        this.name = name;
-        salesReport = new HashMap<>();
-
+    public TicketOffice() {
+        salesReport = new TreeMap<>();
     }
 
-    public BigDecimal getPrice(Calendar date, int sumRuns) {
+    public void sellTicket(LocalDate date, long price) {
         if (!salesReport.containsKey(date)) {
             salesReport.put(date, new BigDecimal("0"));
         }
-        BigDecimal priceTicket = BigDecimal.valueOf(20 + 5L * sumRuns);
+        BigDecimal priceTicket = BigDecimal.valueOf(price);
         BigDecimal newPriceTickets = salesReport.get(date).add(priceTicket);
         salesReport.put(date, newPriceTickets);
-        return priceTicket;
+    }
+
+    public TreeMap<LocalDate, BigDecimal> getSalesReport() {
+        return salesReport;
     }
 
     @Override
     public String toString() {
-        StringBuilder result = new StringBuilder("Касса: " + name + "\n");
-        for (Calendar data : salesReport.keySet()) {
-            result.append("Дата: ").append(new SimpleDateFormat("dd MMM yyy").format(data.getTime()));
-            result.append(", продажи: ").append(salesReport.get(data)).append("\n");
-        }
-        return result.toString();
+        return "TicketOffice{"
+                + "salesReport=" + salesReport
+                + '}';
     }
 }

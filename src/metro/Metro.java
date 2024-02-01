@@ -1,12 +1,18 @@
 package metro;
 
 import exceptions.*;
+import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.TreeMap;
 
 public class Metro {
+    private static int idSeasonTicket;
     private final String city;
-    private final HashMap<Color, Line> lines = new HashMap<>();
+    private final HashSet<Line> lines = new HashSet<>();
+    private final HashMap<String, LocalDate> seasonTickets = new HashMap<>();
 
     public Metro(String nameCity) {
         this.city = nameCity;
@@ -14,52 +20,56 @@ public class Metro {
 
     public void createLine(Color color) throws ImpossibleCreateLineException {
         if (!checkHaveLine(color)) {
-            lines.put(color, new Line(color, this));
-        } else {
-            throw new LineExistsException("Такая линия уже существует");
+            lines.add(new Line(color, this));
+            return;
         }
+        throw new ImpossibleCreateLineException("Линия с таким цветом уже существует");
     }
 
     public Station createFirstStation(Color color, String name) throws ImpossibleCreateStationException,
-            NameStationException {
+            StationAlreadyExistsException, LineNotFoundException {
         if (!checkHaveLine(color)) {
-            throw new HaveStationException("Такой линии не существует!");
+            throw new LineNotFoundException("Такой линии не существует!");
         }
-        if (getStation(name) != null) {
-            throw new NameStationException("Станция с таким именем уже существует");
+        if (checkHaveStation(name)) {
+            throw new StationAlreadyExistsException("Станция с таким именем уже существует");
         }
         if (isEmptyLine(color)) {
-            Station station = new Station(name, lines.get(color), this);
-            lines.get(color).getStations().add(station);
+            Station station = new Station(name, getLine(color), this);
+            getLine(color).getStations().add(station);
             return station;
         }
-        return null;
+        throw new ImpossibleCreateStationException("У линии уже есть первая станция");
     }
 
     public Station createFinallyStation(Color color, String name, Duration time,
                                      String... changeStations) throws ImpossibleCreateStationException,
-            NameStationException {
+            StationAlreadyExistsException, LineNotFoundException {
         if (!checkHaveLine(color)) {
-            throw new HaveStationException("Такой линии не существует!");
+            throw new LineNotFoundException("Такой линии не существует!");
         }
-        if (getStation(name) != null) {
-            throw new NameStationException("Станция с таким именем уже существует");
+        if (checkHaveStation(name)) {
+            throw new StationAlreadyExistsException("Станция с таким именем уже существует");
         }
-        checkHaveLastStation(color);
-        checkLastStationHaveNextStation(color);
+        if (!checkHaveLastStation(color)) {
+            throw new NotFoundStationException("Отсутствует последняя станция!");
+        }
+        if (checkLastStationHaveNextStation(color)) {
+            throw new StationAlreadyExistsException("Следующая станция уже существует");
+        }
         if (time.isZero()) {
             throw new TimeIsZeroException();
         }
-        Station newStation = new Station(name, lines.get(color).getLastStation(), lines.get(color), this);
-        createStationsChange(changeStations, newStation);
-        lines.get(color).getLastStation().setStationNext(newStation);
-        lines.get(color).getLastStation().setTimeTransferToNextStation(time);
-        lines.get(color).getStations().add(newStation);
+        Station newStation = new Station(name, getLine(color).getLastStation(), getLine(color), this);
+        addStationsChange(changeStations, newStation);
+        getLine(color).getLastStation().setStationNext(newStation);
+        getLine(color).getLastStation().setTimeTransferToNextStation(time);
+        getLine(color).getStations().add(newStation);
         return newStation;
     }
 
-    public int sumRuns(String start, String finish) throws ChangeLineException, NameStationException,
-            StartEqualsFinishException {
+    public int sumRuns(String start, String finish) throws ChangeLineException,
+            StartEqualsFinishException, LineNotFoundException, NotFoundStationException {
         Station stationStart = getStation(start);
         Station stationFinish = getStation(finish);
         if (stationStart.equals(stationFinish)) {
@@ -68,7 +78,61 @@ public class Metro {
         return sumRunsDifferentLine(stationStart, stationFinish);
     }
 
-    private int sumRunsDifferentLine(Station start, Station finish) throws ChangeLineException {
+    public void addSeasonTicket(LocalDate date) throws NumberTicketIndexOutOfBoundsException {
+        if (idSeasonTicket < 0 || idSeasonTicket > 9999) {
+            throw new NumberTicketIndexOutOfBoundsException("Вышли за пределы доступимого номера абонемента!");
+        }
+        String id = "a" + "0".repeat(4 - String.valueOf(idSeasonTicket).length()) + idSeasonTicket;
+        seasonTickets.put(id, date.plusMonths(1));
+        idSeasonTicket++;
+    }
+
+    public boolean checkValidation(String id, LocalDate date) throws NotFoundTicket {
+        if (seasonTickets.containsKey(id)) {
+            return seasonTickets.get(id).isAfter(date);
+        }
+        throw new NotFoundTicket("Абономент с таким номером не найден!");
+    }
+
+    public void extendSeasonTicket(String id, LocalDate date) throws NotFoundTicket {
+        if (!seasonTickets.containsKey(id)) {
+            throw new NotFoundTicket("Абономент с таким номером не найден!");
+        }
+        seasonTickets.put(id, date.plusMonths(1));
+    }
+
+    public void printReport() {
+        TreeMap<LocalDate, BigDecimal> report = createReport();
+        StringBuilder result = new StringBuilder();
+        for (LocalDate date : report.keySet()) {
+            result.append(date).append(" - ").append(report.get(date)).append("\n");
+        }
+        System.out.println(result);
+    }
+
+    private TreeMap<LocalDate, BigDecimal> createReport() {
+        TreeMap<LocalDate, BigDecimal> report = new TreeMap<>();
+        for (Line line : lines) {
+            addReport(report, line);
+        }
+        return report;
+    }
+
+    private void addReport(TreeMap<LocalDate, BigDecimal> report, Line line) {
+        for (LocalDate date : line.getReport().keySet()) {
+            if (report.containsKey(date)) {
+                BigDecimal price1 = report.get(date);
+                BigDecimal price2 = line.getReport().get(date);
+                BigDecimal newPrice = new BigDecimal(String.valueOf(price1.add(price2)));
+                report.put(date, newPrice);
+            } else {
+                report.put(date, line.getReport().get(date));
+            }
+        }
+    }
+
+    private int sumRunsDifferentLine(Station start, Station finish) throws ChangeLineException,
+            LineNotFoundException {
         if (!start.getLine().getColor().equals(finish.getLine().getColor())) {
             Color startColor = start.getLine().getColor();
             Color finishColor = finish.getLine().getColor();
@@ -78,9 +142,8 @@ public class Metro {
             sum1 = (sum1 == -1) ? 0 : sum1;
             sum2 = (sum2 == -1) ? 0 : sum2;
             return sum1 + sum2;
-        } else {
-            return sumRunsOnOneLine(start, finish);
         }
+        return sumRunsOnOneLine(start, finish);
     }
     
     private int sumRunsOnOneLine(Station start, Station finish) {
@@ -98,9 +161,17 @@ public class Metro {
         }
         if (nextStation.equals(finish)) {
             return 1;
-        } else {
-            int sum = countSumRunsOnNext(nextStation, finish);
-            return (sum == -1 ? -1 : 1 + sum);
+        }
+        int sum = countSumRunsOnNext(nextStation, finish);
+        return (sum == -1 ? -1 : 1 + sum);
+    }
+
+    private boolean checkHaveStation(String name) {
+        try {
+            getStation(name);
+            return true;
+        } catch (NotFoundStationException e) {
+            return false;
         }
     }
 
@@ -111,17 +182,17 @@ public class Metro {
         }
         if (beforeStation.equals(start)) {
             return 1;
-        } else {
-            int sum = countSumRunsOnBefore(beforeStation, start);
-            return (sum == -1 ? -1 : 1 + sum);
         }
+        int sum = countSumRunsOnBefore(beforeStation, start);
+        return (sum == -1 ? -1 : 1 + sum);
     }
 
-    private Station findStationChange(Color startColor, Color finishColor) throws ChangeLineException {
+    private Station findStationChange(Color startColor, Color finishColor) throws ChangeLineException,
+            LineNotFoundException {
         if (startColor.equals(finishColor)) {
             throw new ChangeLineException();
         }
-        for (Station station : lines.get(startColor).getStations()) {
+        for (Station station : getLine(startColor).getStations()) {
             if (station.findStationChangeLine(finishColor) != null) {
                 return station;
             }
@@ -129,19 +200,18 @@ public class Metro {
         throw new ChangeLineException();
     }
 
-    private Station getStation(String name) {
-        if (!lines.isEmpty()) {
-            for (Line lineMetro : lines.values()) {
-                if (lineMetro.getStationName(name) != null) {
-                    return lineMetro.getStationName(name);
-                }
+    public Station getStation(String name) throws NotFoundStationException {
+        for (Line lineMetro : lines) {
+            Station station = lineMetro.getStationName(name);
+            if (station != null) {
+                return station;
             }
         }
-        return null;
+        throw new NotFoundStationException("Такой станции не существует!");
     }
 
-    private void createStationsChange(String[] changeStations, Station newStation)
-            throws ChangeLineException {
+    private void addStationsChange(String[] changeStations, Station newStation)
+            throws ChangeLineException, NotFoundStationException {
         for (String stationName : changeStations) {
             Station stationChange = getStation(stationName);
             if (!stationChange.getLine().equals(newStation.getLine())) {
@@ -154,35 +224,40 @@ public class Metro {
     }
 
     private boolean checkHaveLine(Color color) {
-        return lines.containsKey(color);
+        try {
+            getLine(color);
+        } catch (LineNotFoundException e) {
+            return false;
+        }
+        return true;
     }
 
-    private boolean isEmptyLine(Color color) throws HaveStationException {
-        if (lines.get(color).getStations().isEmpty()) {
-            return true;
-        }
-        throw new HaveStationException("Первая станция уже существует!");
+    private boolean isEmptyLine(Color color) throws LineNotFoundException {
+        return getLine(color).getStations().isEmpty();
     }
 
-    private void checkLastStationHaveNextStation(Color color) throws NotLastStationException {
-        if (lines.get(color).getLastStation().getStationNext() == null) {
-            return;
-        }
-        throw new NotLastStationException();
+    private boolean checkHaveLastStation(Color color) throws LineNotFoundException {
+        return getLine(color).getLastStation() != null;
     }
 
-    private void checkHaveLastStation(Color color) throws NoHaveLastStationException {
-        if (lines.get(color).getLastStation() != null) {
-            return;
+    private boolean checkLastStationHaveNextStation(Color color) throws LineNotFoundException {
+        return getLine(color).getLastStation().getStationNext() != null;
+    }
+
+    private Line getLine(Color color) throws LineNotFoundException {
+        for (Line line : lines) {
+            if (line.getColor().equals(color)) {
+                return line;
+            }
         }
-        throw new NoHaveLastStationException();
+        throw new LineNotFoundException("Такой станции не существует");
     }
 
     @Override
     public String toString() {
         return "metro.Metro{"
                 + "city='" + city + '\''
-                + ", lines=" + lines.values()
+                + ", lines=" + lines
                 + '}';
     }
 }
