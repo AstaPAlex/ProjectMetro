@@ -3,6 +3,7 @@ package metro;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.concurrent.TransferQueue;
 
 public class Line {
     private final Color color;
@@ -40,25 +41,12 @@ public class Line {
         return null;
     }
 
-    public TreeMap<LocalDate, BigDecimal> getReport() {
-        TreeMap<LocalDate, BigDecimal> report = new TreeMap<>();
+    public List<TreeMap<LocalDate, BigDecimal>> getReport() {
+        List<TreeMap<LocalDate, BigDecimal>> report = new ArrayList<>();
         for (Station station : stations) {
-            addReport(report, station);
+            report.add(station.getReport());
         }
         return report;
-    }
-
-    private void addReport(TreeMap<LocalDate, BigDecimal> report, Station station) {
-        for (LocalDate date : station.getReport().keySet()) {
-            if (report.containsKey(date)) {
-                BigDecimal price1 = report.get(date);
-                BigDecimal price2 = station.getReport().get(date);
-                BigDecimal newPrice = new BigDecimal(String.valueOf(price1.add(price2)));
-                report.put(date, newPrice);
-            } else {
-                report.put(date, station.getReport().get(date));
-            }
-        }
     }
 
     @Override

@@ -5,11 +5,7 @@ import java.time.LocalDate;
 import java.util.TreeMap;
 
 public class TicketOffice {
-    private final TreeMap<LocalDate, BigDecimal> salesReport;
-
-    public TicketOffice() {
-        salesReport = new TreeMap<>();
-    }
+    private final TreeMap<LocalDate, BigDecimal> salesReport = new TreeMap<>();
 
     public void sellTicket(LocalDate date, long price) {
         if (!salesReport.containsKey(date)) {

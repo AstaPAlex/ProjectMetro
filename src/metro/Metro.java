@@ -4,9 +4,7 @@ import exceptions.*;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.TreeMap;
+import java.util.*;
 
 public class Metro {
     private static int idSeasonTicket;
@@ -102,31 +100,36 @@ public class Metro {
     }
 
     public void printReport() {
-        TreeMap<LocalDate, BigDecimal> report = createReport();
+        TreeMap<LocalDate, BigDecimal> mainReport = createMainReport();
         StringBuilder result = new StringBuilder();
-        for (LocalDate date : report.keySet()) {
-            result.append(date).append(" - ").append(report.get(date)).append("\n");
+        for (LocalDate date : mainReport.keySet()) {
+            result.append(date).append(" - ").append(mainReport.get(date)).append("\n");
         }
         System.out.println(result);
     }
 
-    private TreeMap<LocalDate, BigDecimal> createReport() {
-        TreeMap<LocalDate, BigDecimal> report = new TreeMap<>();
+    private TreeMap<LocalDate, BigDecimal> createMainReport() {
+        TreeMap<LocalDate, BigDecimal> mainReport = new TreeMap<>();
         for (Line line : lines) {
-            addReport(report, line);
+            List<TreeMap<LocalDate, BigDecimal>> reportLine = line.getReport();
+            for (TreeMap<LocalDate, BigDecimal> reportStation : reportLine) {
+                addReportStation(mainReport, reportStation);
+            }
+
         }
-        return report;
+        return mainReport;
     }
 
-    private void addReport(TreeMap<LocalDate, BigDecimal> report, Line line) {
-        for (LocalDate date : line.getReport().keySet()) {
-            if (report.containsKey(date)) {
-                BigDecimal price1 = report.get(date);
-                BigDecimal price2 = line.getReport().get(date);
+    private void addReportStation(TreeMap<LocalDate, BigDecimal> mainReport,
+                                  TreeMap<LocalDate, BigDecimal> reportStation) {
+        for (LocalDate date : reportStation.keySet()) {
+            if (mainReport.containsKey(date)) {
+                BigDecimal price1 = reportStation.get(date);
+                BigDecimal price2 = mainReport.get(date);
                 BigDecimal newPrice = new BigDecimal(String.valueOf(price1.add(price2)));
-                report.put(date, newPrice);
+                mainReport.put(date, newPrice);
             } else {
-                report.put(date, line.getReport().get(date));
+                mainReport.put(date, reportStation.get(date));
             }
         }
     }
