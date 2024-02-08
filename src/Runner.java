@@ -1,4 +1,3 @@
-import exceptions.*;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -12,9 +11,7 @@ public class Runner {
     private static Station station1;
     private static Station station2;
 
-    public static void main(String[] args) throws ImpossibleCreateLineException, ImpossibleCreateStationException,
-            StationAlreadyExistsException, StartEqualsFinishException, LineNotFoundException,
-            NumberTicketIndexOutOfBoundsException, NotFoundTicket {
+    public static void main(String[] args) {
         Metro metro = new Metro("Пермь");
         addStationMetro(metro);
         System.out.println(metro);
@@ -23,8 +20,7 @@ public class Runner {
 
     }
 
-    public static void addStationMetro(Metro metro) throws ImpossibleCreateLineException,
-            ImpossibleCreateStationException, StationAlreadyExistsException, LineNotFoundException {
+    public static void addStationMetro(Metro metro) {
         metro.createLine(Color.RED);
 
         station1 = metro.createFirstStation(Color.RED, "Спортивная");
@@ -42,8 +38,7 @@ public class Runner {
         metro.createFinallyStation(Color.BLUE, "Соборная", Duration.ofSeconds(108));
     }
 
-    public static void sellTickets(Metro metro) throws StartEqualsFinishException, ChangeLineException,
-            LineNotFoundException, NotFoundStationException, NumberTicketIndexOutOfBoundsException, NotFoundTicket {
+    public static void sellTickets(Metro metro) {
         LocalDateTime date1 = LocalDateTime.of(2023, Month.DECEMBER, 22, 15, 10);
         LocalDateTime date2 = LocalDateTime.of(2023, Month.DECEMBER, 23, 16, 20);
         LocalDateTime date3 = LocalDateTime.of(2023, Month.DECEMBER, 24, 17, 22);
@@ -57,8 +52,8 @@ public class Runner {
         station1.sellSeasonTicket(LocalDate.of(2023, Month.DECEMBER, 22));
         station1.sellSeasonTicket(LocalDate.of(2023, Month.DECEMBER, 23));
 
-        boolean result1 = metro.checkValidation("a0000", LocalDate.of(2024, Month.JANUARY, 10));
-        boolean result2 = metro.checkValidation("a0001", LocalDate.of(2024, Month.JANUARY, 10));
+        boolean result1 = metro.checkValidation("a0000", LocalDate.of(2024, Month.JANUARY, 22));
+        boolean result2 = metro.checkValidation("a0001", LocalDate.of(2024, Month.JANUARY, 22));
         System.out.println("Действиетелен проездной a0000:" + result1);
         System.out.println("Действиетелен проездной a0001:" + result2);
 

@@ -3,7 +3,6 @@ package metro;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.concurrent.TransferQueue;
 
 public class Line {
     private final Color color;
@@ -24,29 +23,15 @@ public class Line {
     }
 
     public Station getLastStation() {
-        Iterator<Station> iterator = stations.iterator();
-        Station lastStation = null;
-        while (iterator.hasNext()) {
-            lastStation = iterator.next();
-        }
-        return lastStation;
+        return stations.stream()
+                .reduce((a, b) -> b)
+                .orElseThrow(() -> new RuntimeException("Нет последней станции"));
     }
 
-    public Station getStationName(String name) {
-        for (Station station : stations) {
-            if (station.getName().equalsIgnoreCase(name)) {
-                return station;
-            }
-        }
-        return null;
-    }
-
-    public List<TreeMap<LocalDate, BigDecimal>> getReport() {
-        List<TreeMap<LocalDate, BigDecimal>> report = new ArrayList<>();
-        for (Station station : stations) {
-            report.add(station.getReport());
-        }
-        return report;
+    public List<TreeMap<LocalDate, BigDecimal>> getReports() {
+        return stations.stream()
+                .map(Station::getReport)
+                .toList();
     }
 
     @Override

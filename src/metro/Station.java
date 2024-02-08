@@ -1,11 +1,11 @@
 package metro;
 
-import exceptions.*;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Station {
     private static final long PRICE_SEASON_TICKET = 3000;
@@ -14,8 +14,8 @@ public class Station {
     private final String name;
     private final Metro metro;
     private final Line line;
-    private final TicketOffice ticketOffice;
-    private final Set<Station> changeLines = new HashSet<>();
+    private final TicketOffice ticketOffice = new TicketOffice();
+    private final Set<Station> stationsChange = new HashSet<>();
     private Station stationBefore;
     private Station stationNext;
     private Duration timeTransferToNextStation;
@@ -26,44 +26,32 @@ public class Station {
         this.stationBefore = stationBefore;
         this.line = lineMetro;
         this.metro = metro;
-        this.ticketOffice = new TicketOffice();
     }
 
     public Station(String name, Line lineMetro, Metro metro) {
         this.name = name;
         this.line = lineMetro;
         this.metro = metro;
-        this.ticketOffice = new TicketOffice();
     }
 
-    private String getStringColorChangeLines() {
-        String result = null;
-        String delimiter = ",";
-        for (Station station : changeLines) {
-            result = String.join(delimiter, station.getLine().getColor().getStringColor());
-        }
-        return result;
-    }
-
-    public void sellTicket(LocalDateTime dateTime, String start, String finish) throws StartEqualsFinishException,
-            ChangeLineException, LineNotFoundException, NotFoundStationException {
-        int sumRuns = metro.sumRuns(start, finish);
+    public void sellTicket(LocalDateTime dateTime, String startStation, String finishStation) {
+        int countRuns = metro.countRuns(startStation, finishStation);
         LocalDate date = dateTime.toLocalDate();
-        ticketOffice.sellTicket(date, sumRuns * PRICE_ONE_TRANSFER + PRICE_TICKET);
+        ticketOffice.sellTicket(date, countRuns * PRICE_ONE_TRANSFER + PRICE_TICKET);
     }
 
-    public void sellSeasonTicket(LocalDate date) throws NumberTicketIndexOutOfBoundsException {
-        getTicketOffice().sellTicket(date, PRICE_SEASON_TICKET);
+    public void sellSeasonTicket(LocalDate date) {
+        ticketOffice.sellTicket(date, PRICE_SEASON_TICKET);
         metro.addSeasonTicket(date);
     }
 
-    public void extendSeasonTicket(String id, LocalDate date) throws NotFoundTicket {
+    public void extendSeasonTicket(String id, LocalDate date) {
         metro.extendSeasonTicket(id, date);
-        getTicketOffice().sellTicket(date, PRICE_SEASON_TICKET);
+        ticketOffice.sellTicket(date, PRICE_SEASON_TICKET);
     }
 
     public TreeMap<LocalDate, BigDecimal> getReport() {
-        return ticketOffice.getSalesReport();
+        return ticketOffice.getReport();
     }
 
     public Line getLine() {
@@ -83,28 +71,43 @@ public class Station {
     }
 
     public void addChangeStation(Station station) {
-        changeLines.add(station);
+        stationsChange.add(station);
     }
 
     public void setStationNext(Station stationNext) {
         this.stationNext = stationNext;
     }
 
-    public Station findStationChangeLine(Color finishColor) {
-        for (Station station : changeLines) {
-            if (finishColor.equals(station.line.getColor())) {
-                return station;
-            }
-        }
-        return null;
+    public boolean checkStationChangeLine(Color finishColor) {
+        return stationsChange.stream()
+                .anyMatch(station -> finishColor.equals(station.line.getColor()));
     }
 
     public Station getStationBefore() {
         return stationBefore;
     }
 
-    public TicketOffice getTicketOffice() {
-        return ticketOffice;
+    public void addStationsChange(String[] changeStations) {
+        if (changeStations.length > 0) {
+            Arrays.stream(changeStations)
+                    .map(metro::getStation)
+                    .filter(stationsChange -> !stationsChange.getLine().equals(line))
+                    .findFirst()
+                    .ifPresentOrElse((this::addStationChange), () -> {
+                        throw new RuntimeException("Станция пересадки находится на той же линии!");
+                    });
+        }
+    }
+
+    private void addStationChange(Station station) {
+        this.addChangeStation(station);
+        station.addChangeStation(this);
+    }
+
+    private String getStringColorChangeLines() {
+        return stationsChange.stream()
+                .map(station -> station.getLine().getColor().getStringColor())
+                .collect(Collectors.joining(", "));
     }
 
     @Override
@@ -115,8 +118,7 @@ public class Station {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        Station station = (Station) o;
-        return this.name.equals(((Station) o).name) || this.changeLines.contains(o);
+        return this.name.equals(((Station) o).name) || this.stationsChange.contains(o);
     }
 
     @Override

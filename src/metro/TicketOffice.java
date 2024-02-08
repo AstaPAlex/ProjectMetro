@@ -9,14 +9,14 @@ public class TicketOffice {
 
     public void sellTicket(LocalDate date, long price) {
         if (!salesReport.containsKey(date)) {
-            salesReport.put(date, new BigDecimal("0"));
+            salesReport.put(date, BigDecimal.ZERO);
         }
-        BigDecimal priceTicket = BigDecimal.valueOf(price);
-        BigDecimal newPriceTickets = salesReport.get(date).add(priceTicket);
-        salesReport.put(date, newPriceTickets);
+        salesReport.put(
+                date,
+                salesReport.get(date).add(BigDecimal.valueOf(price)));
     }
 
-    public TreeMap<LocalDate, BigDecimal> getSalesReport() {
+    public TreeMap<LocalDate, BigDecimal> getReport() {
         return salesReport;
     }
 
